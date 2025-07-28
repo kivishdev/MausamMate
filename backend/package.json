@@ -1,0 +1,31 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.7.0",
+    "@google/genai": "^1.11.0",
+    "@google/generative-ai": "^0.24.1",
+    "@speechmatics/auth": "^0.0.1",
+    "@speechmatics/batch-client": "^5.1.0",
+    "@speechmatics/real-time-client": "^7.0.2",
+    "axios": "^1.11.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "mime": "^4.0.7",
+    "multer": "^2.0.2",
+    "node-fetch": "^3.3.2",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0"
+  }
+}

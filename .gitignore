@@ -1,0 +1,9 @@
+# Sensitive Environment Variables
+backend/.env
+
+# Dependencies (these can be reinstalled anytime)
+backend/node_modules
+frontend/node_modules
+
+# Build folder (for frontend)
+frontend/dist
