@@ -1,4 +1,4 @@
-// File: backend/src/services/aiService.js
+// File: backend/src/services/aiService.js (UPDATED WITH LATEST GEMINI SDK)
 // Enhanced weather service with latest Gemini SDK and USGS water data integration
 const { GoogleGenAI } = require("@google/genai");
 const { getOpenMeteoWeather } = require("./openMeteoService");
@@ -21,14 +21,8 @@ const getLocationName = async (lat, lon) => {
   }
 };
 
-// Find nearby USGS water monitoring stations (you'll need to maintain a database or use USGS site service)
+// Find nearby USGS water monitoring stations
 const getNearbyUsgsStations = async (lat, lon, radiusKm = 50) => {
-  // This is a simplified example. In practice, you'd want to:
-  // 1. Use USGS site service API to find stations
-  // 2. Maintain a database of active stations
-  // 3. Cache results for performance
-  
-  // For demo purposes, here are some major US stations (you'd expand this)
   const majorStations = [
     { id: "01646500", name: "Potomac River at Great Falls, MD", lat: 39.0003, lon: -77.2528 },
     { id: "14211720", name: "Willamette River at Portland, OR", lat: 45.5152, lon: -122.6784 },
@@ -37,7 +31,6 @@ const getNearbyUsgsStations = async (lat, lon, radiusKm = 50) => {
     { id: "12358500", name: "Clark Fork at Missoula, MT", lat: 46.8721, lon: -113.9940 }
   ];
   
-  // Calculate distance and find nearest stations
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Earth's radius in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -56,7 +49,7 @@ const getNearbyUsgsStations = async (lat, lon, radiusKm = 50) => {
     }))
     .filter(station => station.distance <= radiusKm)
     .sort((a, b) => a.distance - b.distance)
-    .slice(0, 3); // Get top 3 nearest stations
+    .slice(0, 3);
   
   return nearbyStations;
 };
@@ -66,19 +59,10 @@ const getWaterDataForStations = async (stations) => {
   const waterDataPromises = stations.map(async (station) => {
     try {
       const data = await getUsgsWaterData(station.id);
-      return {
-        station: station,
-        data: data,
-        status: 'success'
-      };
+      return { station: station, data: data, status: 'success' };
     } catch (error) {
       console.log(`Failed to fetch data for station ${station.id}:`, error.message);
-      return {
-        station: station,
-        data: null,
-        status: 'failed',
-        error: error.message
-      };
+      return { station: station, data: null, status: 'failed', error: error.message };
     }
   });
   
@@ -87,19 +71,32 @@ const getWaterDataForStations = async (stations) => {
 
 // Enhanced weather response with conversation memory and USGS integration
 const getAiWeatherResponse = async (question, lat, lon, isFirstQuestion = true) => {
-  const weatherData = await getOpenMeteoWeather(lat, lon);
-  const locationName = await getLocationName(lat, lon);
+  // Support both coordinate input and location-based geocoding from OpenMeteo
+  let weatherData;
+  let locationName;
   
-  // Fetch nearby water data
+  if (lat && lon) {
+    // Direct coordinates provided
+    weatherData = await getOpenMeteoWeather({ lat, lon });
+    locationName = await getLocationName(lat, lon);
+  } else {
+    // This assumes your OpenMeteo service can handle location names and geocoding
+    // Adjust this based on your actual openMeteoService implementation
+    weatherData = await getOpenMeteoWeather(question);
+    locationName = weatherData.locationName || "Unknown Location";
+  }
+  
+  // Fetch nearby water data for US locations
   let waterInfo = "No nearby water monitoring stations found";
   try {
-    const nearbyStations = await getNearbyUsgsStations(lat, lon);
-    if (nearbyStations.length > 0) {
-      const waterDataResults = await getWaterDataForStations(nearbyStations);
-      const successfulResults = waterDataResults.filter(result => result.status === 'success');
-      
-      if (successfulResults.length > 0) {
-        waterInfo = successfulResults;
+    if (lat && lon) {
+      const nearbyStations = await getNearbyUsgsStations(lat, lon);
+      if (nearbyStations.length > 0) {
+        const waterDataResults = await getWaterDataForStations(nearbyStations);
+        const successfulResults = waterDataResults.filter(result => result.status === 'success');
+        if (successfulResults.length > 0) {
+          waterInfo = successfulResults;
+        }
       }
     }
   } catch (error) {
@@ -216,18 +213,28 @@ Analyze the question and provide appropriate response - short for simple queries
 
 // Advanced weather analysis with multi-day insights and water data
 const getWeatherInsights = async (question, lat, lon) => {
-  const weatherData = await getOpenMeteoWeather(lat, lon);
-  const locationName = await getLocationName(lat, lon);
+  let weatherData;
+  let locationName;
+  
+  if (lat && lon) {
+    weatherData = await getOpenMeteoWeather({ lat, lon });
+    locationName = await getLocationName(lat, lon);
+  } else {
+    weatherData = await getOpenMeteoWeather(question);
+    locationName = weatherData.locationName || "Unknown Location";
+  }
   
   // Fetch water data
   let waterInfo = "No water monitoring data available";
   try {
-    const nearbyStations = await getNearbyUsgsStations(lat, lon);
-    if (nearbyStations.length > 0) {
-      const waterDataResults = await getWaterDataForStations(nearbyStations);
-      const successfulResults = waterDataResults.filter(result => result.status === 'success');
-      if (successfulResults.length > 0) {
-        waterInfo = successfulResults;
+    if (lat && lon) {
+      const nearbyStations = await getNearbyUsgsStations(lat, lon);
+      if (nearbyStations.length > 0) {
+        const waterDataResults = await getWaterDataForStations(nearbyStations);
+        const successfulResults = waterDataResults.filter(result => result.status === 'success');
+        if (successfulResults.length > 0) {
+          waterInfo = successfulResults;
+        }
       }
     }
   } catch (error) {
@@ -272,15 +279,23 @@ Format as structured response with clear sections. Use Hinglish naturally and in
 
 // Smart weather recommendations based on activity with water safety considerations
 const getActivityRecommendations = async (activity, lat, lon) => {
-  const weatherData = await getOpenMeteoWeather(lat, lon);
-  const locationName = await getLocationName(lat, lon);
+  let weatherData;
+  let locationName;
+  
+  if (lat && lon) {
+    weatherData = await getOpenMeteoWeather({ lat, lon });
+    locationName = await getLocationName(lat, lon);
+  } else {
+    weatherData = await getOpenMeteoWeather(activity);
+    locationName = weatherData.locationName || "Unknown Location";
+  }
   
   // Fetch water data for water-related activities
   let waterInfo = null;
   const waterActivities = ['swimming', 'boating', 'fishing', 'rafting', 'kayaking', 'paddle', 'river', 'lake', 'beach'];
   const isWaterActivity = waterActivities.some(keyword => activity.toLowerCase().includes(keyword));
   
-  if (isWaterActivity) {
+  if (isWaterActivity && lat && lon) {
     try {
       const nearbyStations = await getNearbyUsgsStations(lat, lon);
       if (nearbyStations.length > 0) {
@@ -333,18 +348,28 @@ Respond in helpful Hinglish with practical advice prioritizing safety.`;
 
 // Weather and water conditions comparison
 const getWeatherComparison = async (question, lat, lon) => {
-  const weatherData = await getOpenMeteoWeather(lat, lon);
-  const locationName = await getLocationName(lat, lon);
+  let weatherData;
+  let locationName;
+  
+  if (lat && lon) {
+    weatherData = await getOpenMeteoWeather({ lat, lon });
+    locationName = await getLocationName(lat, lon);
+  } else {
+    weatherData = await getOpenMeteoWeather(question);
+    locationName = weatherData.locationName || "Unknown Location";
+  }
   
   // Fetch water data for comprehensive comparison
   let waterInfo = "No water monitoring data available";
   try {
-    const nearbyStations = await getNearbyUsgsStations(lat, lon);
-    if (nearbyStations.length > 0) {
-      const waterDataResults = await getWaterDataForStations(nearbyStations);
-      const successfulResults = waterDataResults.filter(result => result.status === 'success');
-      if (successfulResults.length > 0) {
-        waterInfo = successfulResults;
+    if (lat && lon) {
+      const nearbyStations = await getNearbyUsgsStations(lat, lon);
+      if (nearbyStations.length > 0) {
+        const waterDataResults = await getWaterDataForStations(nearbyStations);
+        const successfulResults = waterDataResults.filter(result => result.status === 'success');
+        if (successfulResults.length > 0) {
+          waterInfo = successfulResults;
+        }
       }
     }
   } catch (error) {
@@ -388,8 +413,15 @@ Provide clear comparisons in Hinglish with specific recommendations prioritizing
 
 // New function: Flood risk assessment combining weather and water data
 const getFloodRiskAssessment = async (lat, lon) => {
-  const weatherData = await getOpenMeteoWeather(lat, lon);
-  const locationName = await getLocationName(lat, lon);
+  let weatherData;
+  let locationName;
+  
+  if (lat && lon) {
+    weatherData = await getOpenMeteoWeather({ lat, lon });
+    locationName = await getLocationName(lat, lon);
+  } else {
+    throw new Error("Coordinates required for flood risk assessment");
+  }
   
   let waterInfo = "No water monitoring data available";
   try {
@@ -421,19 +453,18 @@ Analyze and provide:
 Use both weather forecast and real-time water data to make assessment. Be specific about risk levels and timing.`;
 
   try {
-    const model = genai.getGenerativeModel({ 
-      model: "gemini-2.5-pro"
-    });
-    
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: floodPrompt }] }],
-      generationConfig: {
-        temperature: 0.3, // Very factual for safety assessment
-        maxOutputTokens: 1000,
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-001",
+      contents: floodPrompt,
+      config: {
+        generationConfig: {
+          temperature: 0.3, // Very factual for safety assessment
+          maxOutputTokens: 1000,
+        }
       }
     });
     
-    return result.response.text();
+    return response.text;
   } catch (error) {
     console.error("Error in flood risk assessment:", error);
     throw new Error("Failed to get flood risk assessment.");
