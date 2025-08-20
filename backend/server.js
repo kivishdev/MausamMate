@@ -18,7 +18,7 @@ const app = express();
 
 const corsOptions = {
   // Add your frontend's live URL here once it's deployed
-  origin: ['http://localhost:5173', 'https://your-frontend-url.vercel.app'], 
+  origin: ['http://localhost:5174', 'https://mausammate-backend.onrender.com'], 
 };
 app.use(cors(corsOptions));
 app.use(express.json());
