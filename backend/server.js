@@ -1,10 +1,10 @@
 // ========================================================================
-// File: backend/server.js (FINAL VERSION WITH RENDER KEEP-ALIVE + FIXED CORS)
+// File: backend/server.js (THE FINAL, CORRECTED VERSION WITH CORS FIX)
 // ========================================================================
 require("dotenv").config();
 
 const express = require("express");
-const cors = require("cors");
+const cors = require('cors');
 
 // --- Import all API routes ---
 const weatherRoutes = require("./src/api/weather");
@@ -16,41 +16,20 @@ const geocodeRoutes = require("./src/api/geocode");
 // --- Express App Setup ---
 const app = express();
 
-// ✅ Allowed Origins (localhost + prod from .env)
-const allowedOrigins = [
-  "http://localhost:5173",                // Dev frontend
-  process.env.PROD_FRONTEND_URL || ""     // Prod frontend
-];
-
+// --- THE FIX: Specific CORS Configuration ---
+// This tells the server to explicitly allow requests from our frontend's address.
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like curl, mobile apps, etc.)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn("🚫 CORS blocked for origin:", origin);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  origin: 'http://localhost:5173',
+  optionsSuccessStatus: 200 // For legacy browser support
 };
-
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Preflight
-app.use(express.json());
+// ---------------------------------------------
 
-// 🔎 Debug Middleware – log every request + origin
-app.use((req, res, next) => {
-  console.log(`➡️ [${req.method}] ${req.originalUrl} | Origin: ${req.headers.origin}`);
-  next();
-});
+app.use(express.json());
 
 // --- Root Route Handler ---
 app.get("/", (_req, res) => {
-  res.status(200).send("🌤️ MausamMate Backend is running successfully!");
+  res.status(200).send("MausamMate Backend is running successfully!");
 });
 
 // --- Register all API routes ---
@@ -62,17 +41,16 @@ app.use("/api/geocode", geocodeRoutes);
 
 // --- Start the Server ---
 const PORT = process.env.PORT || 4000;
+
 app.listen(PORT, () => {
-  console.log(`✅ MausamMate backend running on port ${PORT}`);
+  console.log(`MausamMate backend running on port ${PORT}`);
 });
 
-// --- THE FIX: Keep-Alive Tweak for Render ---
+// --- Keep-Alive Tweak for Render ---
 setInterval(() => {
   const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
   if (RENDER_URL) {
-    console.log("🔄 Pinging self to keep Render instance alive...");
-    fetch(RENDER_URL)
-      .then(() => console.log("✅ Keep-alive successful"))
-      .catch(err => console.error("⚠️ Keep-alive ping failed:", err.message));
+    console.log("Pinging self to keep Render instance alive...");
+    fetch(RENDER_URL).catch(err => console.error("Keep-alive ping failed:", err.message));
   }
-}, 14 * 60 * 1000); // every 14 min
+}, 14 * 60 * 1000); // Ping every 14 minutes
