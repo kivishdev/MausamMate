@@ -1,13 +1,14 @@
-// File: backend/src/api/ai.js (THE FINAL, CORRECT, SMART VERSION)
-// Purpose: This route now intelligently handles requests with either coordinates OR a location name.
+// File: backend/src/api/ai.js (REVERTED TO THE CLEAN, ORIGINAL VERSION)
+// Purpose: This route is now clean and only handles passing coordinates to the AI service.
 
 const express = require('express');
 const router = express.Router();
 const { getAiWeatherResponse } = require('../services/aiService');
-const { getCoordinatesForPlace } = require('../services/geocodingService'); // We need this to be smart
 
-// Simple in-memory session storage
+// Simple in-memory session storage (use Redis/Database in production)
 const userSessions = new Map();
+
+// Session cleanup - remove old sessions after 30 minutes
 setInterval(() => {
   const thirtyMinutesAgo = Date.now() - (30 * 60 * 1000);
   for (const [sessionId, data] of userSessions.entries()) {
@@ -15,47 +16,40 @@ setInterval(() => {
       userSessions.delete(sessionId);
     }
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000); // Clean every 5 minutes
 
-
+/**
+ * @route   POST /api/ai
+ * @desc    Get AI-powered weather insights based on question and coordinates
+ * @body    { question: String, lat: String|Number, lon: String|Number, sessionId?: String }
+ * @returns { answer: String, sessionId: String, isFirstQuestion: Boolean }
+ */
 router.post('/', async (req, res) => {
-  // We accept 'location' as an alternative to 'lat' and 'lon'
-  const { question, lat, lon, location, sessionId } = req.body;
+  const { question, lat, lon, sessionId } = req.body;
 
-  // --- Input Validation ---
-  if (!question) {
-    return res.status(400).json({ error: 'Missing required field: question.' });
-  }
-  if (!lat && !lon && !location) {
-    return res.status(400).json({ error: 'Missing required fields: please provide either lat/lon or a location name.' });
+  // Validate inputs
+  if (!question || !lat || !lon) {
+    return res.status(400).json({
+      error: 'Missing required fields: question, lat, lon.'
+    });
   }
 
   try {
-    let finalLat = lat;
-    let finalLon = lon;
-
-    // --- The Smart Logic ---
-    // If we don't have coordinates, but we have a location name, we geocode it first.
-    if (!lat || !lon) {
-      console.log(`Coordinates not provided. Geocoding location: "${location}"`);
-      const locationData = await getCoordinatesForPlace(location);
-      finalLat = locationData.lat;
-      finalLon = locationData.lon;
-      console.log(`Geocoding successful: [${finalLat}, ${finalLon}]`);
-    }
-    
-    // --- The Rest of the Flow (Remains the Same) ---
+    // Generate or use existing session ID
     const currentSessionId = sessionId || ('session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9));
+    
+    // Check if this is user's first question in this session
     const sessionData = userSessions.get(currentSessionId);
     const isFirstQuestion = !sessionData;
     
-    // Our aiService always gets the final coordinates.
-    const aiResponse = await getAiWeatherResponse(question, finalLat, finalLon, isFirstQuestion);
+    // Get AI response with conversation context
+    const aiResponse = await getAiWeatherResponse(question, lat, lon, isFirstQuestion);
 
+    // Update session data
     userSessions.set(currentSessionId, {
       questionCount: (sessionData?.questionCount || 0) + 1,
       lastActivity: Date.now(),
-      location: { lat: finalLat, lon: finalLon }
+      location: { lat, lon }
     });
 
     res.status(200).json({
@@ -74,5 +68,42 @@ router.post('/', async (req, res) => {
     });
   }
 });
+
+/**
+ * @route   DELETE /api/ai/session/:sessionId
+ * @desc    Clear a specific session (optional endpoint for session management)
+ */
+router.delete('/session/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  
+  if (userSessions.has(sessionId)) {
+    userSessions.delete(sessionId);
+    res.json({ success: true, message: 'Session cleared successfully.' });
+  } else {
+    res.status(404).json({ success: false, error: 'Session not found.' });
+  }
+});
+
+/**
+ * @route   GET /api/ai/sessions
+ * @desc    Get active sessions count (for debugging/monitoring)
+ */
+// THE FIX: We've changed 'req' to '_req' to signify it's an unused parameter.
+router.get('/sessions', (_req, res) => {
+  res.json({
+    activeSessions: userSessions.size,
+    sessions: Array.from(userSessions.entries()).map(([id, data]) => ({
+      sessionId: id,
+      questionCount: data.questionCount,
+      lastActivity: new Date(data.lastActivity).toISOString(),
+      location: data.location
+    }))
+  });
+});
+
+// Utility function to generate unique session IDs
+function generateSessionId() {
+  return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
 
 module.exports = router;
