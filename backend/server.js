@@ -19,7 +19,7 @@ const app = express();
 // --- THE FIX: Specific CORS Configuration ---
 // This tells the server to explicitly allow requests from our frontend's address.
 const corsOptions = {
-  origin: 'http://localhost:5173',
+  origin: 'https://mausam-mate-2734.vercel.app',
   optionsSuccessStatus: 200 // For legacy browser support
 };
 app.use(cors(corsOptions));
