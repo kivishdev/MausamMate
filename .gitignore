@@ -1,9 +1,39 @@
-# Sensitive Environment Variables
+# ################ #
+# SENSITIVE FILES  #
+# ################ #
+# Yeh aapki secret API keys ko protect karega
 backend/.env
+frontend/.env
 
-# Dependencies (these can be reinstalled anytime)
+# ############ #
+# DEPENDENCIES #
+# ############ #
+# Inhe reinstall kiya jaa sakta hai, isliye push karne ki zaroorat nahi
 backend/node_modules
 frontend/node_modules
 
-# Build folder (for frontend)
+# ###################### #
+# FRONTEND BUILD FOLDER  #
+# ###################### #
+# Yeh folder 'npm run build' command se banta hai
 frontend/dist
+
+# ############### #
+# LOG & TEMP FILES #
+# ############### #
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ############# #
+# EDITOR FILES  #
+# ############# #
+# VS Code, etc. ki temporary files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

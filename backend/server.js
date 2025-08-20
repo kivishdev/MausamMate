@@ -1,25 +1,25 @@
-// File: backend/server.js (UPDATE THIS FILE)
-// Purpose: We need to tell our server to use this new geocode route.
+// File: backend/server.js (FINAL CLEANED VERSION WITHOUT VOICE)
+// Purpose: The main server file with only the core, working API routes.
 
-// ✅ CRITICAL: Load environment variables FIRST, before anything else.
 require("dotenv").config();
 
-// --- Now, import all other modules ---
 const express = require("express");
-const http = require('http');
-const { initializeWebSocket } = require('./src/websocket/speechHandler');
+const cors = require('cors');
 
 // --- Import all API routes ---
 const weatherRoutes = require("./src/api/weather");
 const waterRoutes = require("./src/api/water");
 const locationRoutes = require("./src/api/location");
 const aiRoutes = require("./src/api/ai");
-const ttsRoutes = require("./src/api/tts");
-const fullFlowRoutes = require("./src/api/fullFlow");
-const geocodeRoutes = require("./src/api/geocode"); // <-- 1. IMPORT THE NEW GEOCODE ROUTE
+const geocodeRoutes = require("./src/api/geocode");
 
 // --- Express App Setup ---
 const app = express();
+
+const corsOptions = {
+  origin: 'http://localhost:5173',
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // --- Register all API routes ---
@@ -27,17 +27,10 @@ app.use("/api/weather", weatherRoutes);
 app.use("/api/water", waterRoutes);
 app.use("/api/location", locationRoutes);
 app.use("/api/ai", aiRoutes);
-app.use("/api/text-to-speech", ttsRoutes);
-app.use("/api/full-flow", fullFlowRoutes);
-app.use("/api/geocode", geocodeRoutes); // <-- 2. USE THE NEW GEOCODE ROUTE
-
-// --- Server and WebSocket Initialization ---
-const server = http.createServer(app);
-initializeWebSocket(server);
+app.use("/api/geocode", geocodeRoutes);
 
 // --- Start the Server ---
 const PORT = process.env.PORT || 4000;
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`MausamMate backend running on port ${PORT}`);
 });
-
