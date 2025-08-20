@@ -18,7 +18,7 @@ const app = express();
 
 const corsOptions = {
   // Add your frontend's live URL here once it's deployed
-  origin: ['http://localhost:5174', 'https://mausamate.netlify.app'], 
+  origin: ['https://mausamate.netlify.app'], 
 };
 app.use(cors(corsOptions));
 app.use(express.json());
