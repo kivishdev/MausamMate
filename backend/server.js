@@ -1,5 +1,5 @@
 // ========================================================================
-// File: backend/server.js (THE FINAL, CORRECTED VERSION)
+// File: backend/server.js (THE FINAL VERSION WITH RENDER KEEP-ALIVE)
 // ========================================================================
 require("dotenv").config();
 
@@ -37,9 +37,19 @@ app.use("/api/geocode", geocodeRoutes);
 
 // --- Start the Server ---
 const PORT = process.env.PORT || 4000;
-
-// THE FIX: We are using app.listen() because we are not using WebSockets right now.
-// This is the correct and simple way to start the server.
 app.listen(PORT, () => {
   console.log(`MausamMate backend running on port ${PORT}`);
 });
+
+// --- THE FIX: Keep-Alive Tweak for Render ---
+// Render's free instances spin down after 15 minutes of inactivity.
+// This self-pinging mechanism sends a request to our own server every 14 minutes.
+setInterval(() => {
+  // Render provides the server's public URL in this environment variable.
+  const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+  if (RENDER_URL) {
+    console.log("Pinging self to keep Render instance alive...");
+    // We use fetch to make a GET request to our own root URL.
+    fetch(RENDER_URL).catch(err => console.error("Keep-alive ping failed:", err.message));
+  }
+}, 14 * 60 * 1000); // Ping every 14 minutes (14 * 60 * 1000 milliseconds)
