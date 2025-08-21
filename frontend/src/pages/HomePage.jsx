@@ -74,6 +74,7 @@ function HomePage() {
             </div>
           ))}
         </div>
+        <p className="text-sm text-gray-500 mb-2">Please keep your location turned on for accurate weather data</p>
         <p className="text-xl font-bold animate-pulse text-gray-800">{loadingMessages[currentMessageIndex]}</p>
         <p className="text-sm text-gray-500 mt-2">Please wait a moment...</p>
       </div>

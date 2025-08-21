@@ -9,6 +9,7 @@ function GeminiChatbot() {
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
+  const lastResponseRef = useRef(null);
 
   // Prevent background scrolling
   useEffect(() => {
@@ -32,9 +33,11 @@ function GeminiChatbot() {
     }
   };
 
-  // Push AI response as message when it changes
+  // Push AI response as message when it changes - FIXED to prevent duplicates
   useEffect(() => {
-    if (aiResponse) {
+    if (aiResponse && aiResponse !== lastResponseRef.current) {
+      // Only add if it's a new response
+      lastResponseRef.current = aiResponse;
       setMessages((prev) => [...prev, { type: "ai", text: aiResponse }]);
     }
   }, [aiResponse]);
@@ -46,7 +49,7 @@ function GeminiChatbot() {
   return (
     <div className="flex flex-col h-screen bg-gradient-to-b from-blue-100 via-white to-blue-50">
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 custom-scrollbar">
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -95,6 +98,24 @@ function GeminiChatbot() {
           </button>
         </div>
       </div>
+
+      {/* Custom Scrollbar Styles */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(to bottom, #3b82f6, #6366f1);
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(to bottom, #2563eb, #4f46e5);
+        }
+      `}</style>
     </div>
   );
 }
