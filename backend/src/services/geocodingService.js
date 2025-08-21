@@ -1,33 +1,34 @@
-// File: backend/src/services/geocodingService.js (UPDATED WITH OPEN-METEO)
-// Purpose: This service converts a location name into coordinates using the reliable Open-Meteo API.
+// File: backend/src/services/geocodingService.js (UPDATED WITH LOCATIONIQ)
+// Purpose: This service converts a location name into coordinates using the reliable LocationIQ API.
 
 const axios = require('axios');
+const LOCATIONIQ_API_KEY = process.env.LOCATIONIQ_API_KEY;
 
 /**
- * Fetches coordinates for a given location name using the Open-Meteo Geocoding API.
+ * Fetches coordinates for a given location name using the LocationIQ Forward Geocoding API.
  * @param {string} placeName - The name of the place to search for (e.g., "Bhayandar", "Delhi").
  * @returns {Promise<object>} - A promise that resolves to an object with the best-matched location's details.
  */
 const getCoordinatesForPlace = async (placeName) => {
   const encodedPlaceName = encodeURIComponent(placeName);
-  // This is the URL for the Open-Meteo Geocoding API.
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodedPlaceName}&count=1&language=en&format=json`;
+  // LocationIQ Forward Geocoding API URL
+  const url = `https://us1.locationiq.com/v1/search?key=${LOCATIONIQ_API_KEY}&q=${encodedPlaceName}&format=json&limit=1`;
 
-  console.log(`Geocoding for: "${placeName}" using Open-Meteo API...`);
+  console.log(`Geocoding for: "${placeName}" using LocationIQ API...`);
 
   try {
     const response = await axios.get(url);
     const data = response.data;
 
     // We check if any results were found.
-    if (data && data.results && data.results.length > 0) {
-      const firstResult = data.results[0];
+    if (data && data.length > 0) {
+      const firstResult = data[0];
       const location = {
-        name: firstResult.name,
-        country: firstResult.country,
-        admin1: firstResult.admin1, // This is usually the state
-        lat: firstResult.latitude,
-        lon: firstResult.longitude
+        name: firstResult.display_name, // keeping similar to Open-Meteo's "name"
+        country: firstResult.address?.country || null,
+        admin1: firstResult.address?.state || null, // This is usually the state
+        lat: parseFloat(firstResult.lat),
+        lon: parseFloat(firstResult.lon)
       };
       console.log(`Geocoding successful: ${location.name}, ${location.admin1} -> [${location.lat}, ${location.lon}]`);
       return location;
@@ -35,12 +36,9 @@ const getCoordinatesForPlace = async (placeName) => {
       throw new Error(`No results found for "${placeName}"`);
     }
   } catch (error) {
-    console.error("Error fetching data from Open-Meteo Geocoding API:", error.message);
+    console.error("Error fetching data from LocationIQ API:", error.message);
     throw new Error("Failed to get coordinates for the given place.");
   }
 };
 
 module.exports = { getCoordinatesForPlace };
-
-
-// ---
