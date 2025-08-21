@@ -123,16 +123,23 @@ function HomePage() {
         </div>
       </main>
 
+      {/* Mobile-friendly chatbot modal with responsive sizing */}
       {showChatbot && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[90vh] max-h-[700px] flex flex-col">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-xl font-semibold text-gray-800">Weather Assistant</h3>
-              <button onClick={() => setShowChatbot(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:w-auto sm:min-w-[400px] sm:max-w-[600px] h-[85vh] sm:h-[80vh] sm:max-h-[700px] flex flex-col">
+            {/* Header */}
+            <div className="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center bg-white rounded-t-3xl sm:rounded-t-2xl">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-800">Weather Assistant</h3>
+              <button 
+                onClick={() => setShowChatbot(false)} 
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
                 <X size={20} className="text-gray-500" />
               </button>
             </div>
-            <div className="flex-1 p-4 overflow-y-auto">
+            
+            {/* Chatbot Content */}
+            <div className="flex-1 overflow-hidden">
               <GeminiChatbot />
             </div>
           </div>
@@ -141,4 +148,5 @@ function HomePage() {
     </div>
   );
 }
+
 export default HomePage;

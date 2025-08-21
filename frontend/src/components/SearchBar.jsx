@@ -1,6 +1,6 @@
 // ========================================================================
-// File: frontend/src/components/SearchBar.jsx (UPGRADED VERSION)
-// Purpose: Search bar with dropdown + better theme + auto-close
+// File: frontend/src/components/SearchBar.jsx (FINAL UPDATED VERSION)
+// Purpose: Modern search bar with selectable search results + clean dropdown close
 // ========================================================================
 import { useState } from 'react';
 import { Search } from 'lucide-react';
@@ -8,81 +8,81 @@ import { useWeatherStore } from '../state/weatherStore';
 
 function SearchBar() {
   const [inputValue, setInputValue] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const { fetchDataForLocation } = useWeatherStore();
+  const { 
+    fetchDataForLocation, 
+    searchResults, 
+    selectLocation, 
+    clearSearchResults // 👈 add from store
+  } = useWeatherStore();
 
-  // ✅ search API call
-  const handleSearch = async () => {
+  // ✅ handle search on button/enter
+  const handleSearch = () => {
     if (inputValue.trim()) {
-      await fetchDataForLocation(inputValue);
-      setInputValue('');
-      setSuggestions([]); // ✅ dropdown close after search
+      fetchDataForLocation(inputValue);
     }
   };
 
-  // ✅ handle Enter key
+  // ✅ enter key triggers search
   const handleKeyPress = (event) => {
     if (event.key === 'Enter') {
       handleSearch();
     }
   };
 
-  // ✅ Select from dropdown
+  // ✅ select a location from results
   const handleSelect = (loc) => {
-    fetchDataForLocation(loc.name);
-    setInputValue(''); 
-    setSuggestions([]); // ✅ dropdown close immediately
-  };
-
-  // ✅ Dummy suggestions until API integrated
-  const handleChange = (e) => {
-    const value = e.target.value;
-    setInputValue(value);
-
-    // 🔹 Replace with API suggestions later
-    if (value.length > 1) {
-      setSuggestions([
-        { name: `${value} City`, lat: 0, lon: 0 },
-        { name: `${value} Town`, lat: 1, lon: 1 },
-      ]);
-    } else {
-      setSuggestions([]);
-    }
+    selectLocation(loc); // store me location set + weather fetch
+    setInputValue('');
+    clearSearchResults(); // 👈 store se hi clear
   };
 
   return (
     <div className="relative w-full max-w-md">
       {/* Search Bar */}
-      <div className="flex items-center w-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl shadow-md">
+      <div className="flex items-center bg-gradient-to-r from-blue-50 to-blue-100 
+                      rounded-2xl border border-blue-200 shadow-sm hover:shadow-md 
+                      transition-all duration-300">
         <input
           type="text"
           value={inputValue}
-          onChange={handleChange}
+          onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="🔍 Search for a city..."
-          className="flex-grow px-4 py-3 rounded-l-xl bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="flex-grow px-4 py-3 rounded-l-2xl bg-transparent 
+                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 
+                     placeholder:text-gray-400 text-gray-700"
         />
         <button 
           onClick={handleSearch}
-          className="p-3 bg-yellow-400 text-gray-900 font-bold rounded-r-xl hover:bg-yellow-500 transition-colors"
+          className="p-3 bg-blue-500 text-white rounded-r-2xl 
+                     hover:bg-blue-600 active:scale-95 transition-transform"
         >
           <Search size={20} />
         </button>
       </div>
 
-      {/* Dropdown */}
-      {suggestions.length > 0 && (
-        <ul className="absolute z-10 w-full bg-white mt-2 rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-y-auto">
-          {suggestions.map((loc, index) => (
-            <li 
-              key={index} 
+      {/* Search Results Dropdown */}
+      {searchResults.length > 0 && (
+        <div className="absolute mt-2 w-full bg-white border border-blue-200 
+                        rounded-xl shadow-lg max-h-60 overflow-y-auto z-10">
+          {searchResults.map((loc, index) => (
+            <div
+              key={index}
               onClick={() => handleSelect(loc)}
-              className="px-4 py-2 cursor-pointer hover:bg-blue-100 transition-colors"
+              className="px-4 py-2 hover:bg-blue-50 cursor-pointer 
+                         transition-colors"
             >
-              {loc.name}
-            </li>
+              <span className="font-medium text-gray-700">
+                {loc.name}, {loc.country}
+              </span>
+              {loc.state && (
+                <span className="text-gray-500 text-sm ml-1">
+                  ({loc.state})
+                </span>
+              )}
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

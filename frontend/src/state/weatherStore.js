@@ -109,6 +109,8 @@ export const useWeatherStore = create((set, get) => ({
     }
   },
 
+  clearSearchResults: () => set({ searchResults: [] }),
+
   /**
    * Fetches initial data when the app loads.
    */

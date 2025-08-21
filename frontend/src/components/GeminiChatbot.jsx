@@ -7,11 +7,9 @@ import { useWeatherStore } from "../state/weatherStore";
 function GeminiChatbot() {
   const { aiResponse, isChatLoading, askAi } = useWeatherStore();
   const [inputValue, setInputValue] = useState("");
-  const [messages, setMessages] = useState([]);
-  const messagesEndRef = useRef(null);
-  const lastResponseRef = useRef(null);
+  const chatEndRef = useRef(null);
 
-  // Prevent background scrolling
+  // Disable body scroll while chat is active
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
@@ -19,103 +17,76 @@ function GeminiChatbot() {
     };
   }, []);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to latest message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isChatLoading]);
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [aiResponse, isChatLoading]);
 
   const handleSend = () => {
     if (inputValue.trim()) {
-      const newMessage = { type: "user", text: inputValue };
-      setMessages((prev) => [...prev, newMessage]);
       askAi(inputValue);
       setInputValue("");
     }
   };
 
-  // Push AI response as message when it changes - FIXED to prevent duplicates
-  useEffect(() => {
-    if (aiResponse && aiResponse !== lastResponseRef.current) {
-      // Only add if it's a new response
-      lastResponseRef.current = aiResponse;
-      setMessages((prev) => [...prev, { type: "ai", text: aiResponse }]);
-    }
-  }, [aiResponse]);
-
   const handleKeyPress = (event) => {
-    if (event.key === "Enter") handleSend();
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleSend();
+    }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-blue-100 via-white to-blue-50">
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 custom-scrollbar">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`max-w-[75%] px-4 py-2 rounded-2xl shadow-md ${
-              msg.type === "user"
-                ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white ml-auto"
-                : "bg-white text-gray-800 mr-auto"
-            }`}
-          >
-            <ReactMarkdown>{msg.text}</ReactMarkdown>
+    <div className="flex flex-col h-full w-full">
+      {/* Chat Messages - No bubbles, natural width */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {isChatLoading ? (
+          <div className="flex items-center gap-2 text-gray-500 text-sm">
+            <LoaderCircle size={18} className="animate-spin" />
+            <span>MausamMate is thinking...</span>
           </div>
-        ))}
-
-        {isChatLoading && (
-          <div className="flex items-center gap-2 text-gray-500 animate-pulse">
-            <LoaderCircle size={20} className="animate-spin text-blue-500" />
-            <span>Thinking...</span>
+        ) : aiResponse ? (
+          <div className="text-gray-700 text-sm leading-relaxed">
+            <ReactMarkdown 
+              components={{
+                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                strong: ({ children }) => <strong className="font-semibold text-gray-800">{children}</strong>,
+                em: ({ children }) => <em className="italic">{children}</em>,
+                code: ({ children }) => <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">{children}</code>
+              }}
+            >
+              {aiResponse}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          <div className="text-gray-500 text-sm text-center py-8">
+            Ask me anything about the weather! 🌤️
           </div>
         )}
-
-        <div ref={messagesEndRef} />
+        <div ref={chatEndRef} />
       </div>
 
       {/* Input Bar */}
-      <div className="sticky bottom-0 w-full bg-white border-t border-gray-200 p-3 shadow-lg">
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
-            className="flex-grow p-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-            disabled={isChatLoading}
-          />
-          <button
-            onClick={handleSend}
-            className="p-3 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            disabled={isChatLoading || !inputValue.trim()}
-          >
-            {isChatLoading ? (
-              <LoaderCircle size={20} className="animate-spin" />
-            ) : (
-              <Send size={20} />
-            )}
-          </button>
-        </div>
+      <div className="flex items-center gap-2 p-4 border-t border-gray-200 bg-white">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="e.g., Kal baarish hogi kya?"
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          disabled={isChatLoading}
+        />
+        <button
+          onClick={handleSend}
+          className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[44px]"
+          disabled={isChatLoading || !inputValue.trim()}
+        >
+          <Send size={18} />
+        </button>
       </div>
-
-      {/* Custom Scrollbar Styles */}
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f5f9;
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: linear-gradient(to bottom, #3b82f6, #6366f1);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(to bottom, #2563eb, #4f46e5);
-        }
-      `}</style>
     </div>
   );
 }
