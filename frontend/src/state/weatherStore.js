@@ -1,5 +1,5 @@
 // File: frontend/src/state/weatherStore.js
-// Purpose: This is the final version with all functions, including the corrected AI chat logic.
+// Purpose: Final version with search results + selectLocation flow
 
 import { create } from 'zustand';
 import axios from 'axios';
@@ -9,6 +9,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const useWeatherStore = create((set, get) => ({
   // --- STATE ---
   location: null,
+  searchResults: [],
   weatherData: null,
   aiResponse: "Hello! Ask me anything about the weather...", // Default message
   sessionId: null,
@@ -75,21 +76,36 @@ export const useWeatherStore = create((set, get) => ({
 
   /**
    * Fetches data for a location name provided by the user from the search bar.
+   * Only sets searchResults — weather is fetched after user selects a location.
    */
   fetchDataForLocation: async (placeName) => {
     set({ isLoading: true, error: null });
     try {
       console.log(`Searching for location: ${placeName}`);
       const geocodeRes = await axios.get(`${API_BASE_URL}/api/geocode?place=${placeName}`);
-      const locationData = geocodeRes.data;
-      
-      set({ location: { name: locationData.name, lat: locationData.lat, lon: locationData.lon } });
+      const locationData = geocodeRes.data; // ✅ this is an array now
 
-      await get().fetchWeatherForCoordinates(locationData.lat, locationData.lon);
+      set({
+        searchResults: locationData,  
+        isLoading: false,
+      });
 
     } catch (err) {
       console.error("Failed to fetch data for location:", err);
       set({ error: `Could not find weather for "${placeName}". Please try another location.`, isLoading: false });
+    }
+  },
+
+  /**
+   * When user selects a location from search results.
+   */
+  selectLocation: async (location) => {
+    set({ location, isLoading: true, error: null });
+    try {
+      await get().fetchWeatherForCoordinates(location.lat, location.lon);
+    } catch (err) {
+      console.error("Failed to fetch weather:", err);
+      set({ error: "Could not fetch weather data.", isLoading: false });
     }
   },
 
@@ -117,7 +133,9 @@ export const useWeatherStore = create((set, get) => ({
         async (position) => {
           const { latitude, longitude } = position.coords;
           try {
-            const geoResponse = await axios.get(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+            const geoResponse = await axios.get(
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+            );
             const cityName = geoResponse.data.city || geoResponse.data.locality || 'Current Location';
             set({ location: { name: cityName, lat: latitude, lon: longitude } });
           } catch {

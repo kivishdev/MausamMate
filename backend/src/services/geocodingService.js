@@ -12,7 +12,7 @@ const LOCATIONIQ_API_KEY = process.env.LOCATIONIQ_API_KEY;
 const getCoordinatesForPlace = async (placeName) => {
   const encodedPlaceName = encodeURIComponent(placeName);
   // LocationIQ Forward Geocoding API URL
-  const url = `https://us1.locationiq.com/v1/search?key=${LOCATIONIQ_API_KEY}&q=${encodedPlaceName}&format=json&limit=1`;
+  const url = `https://us1.locationiq.com/v1/search?key=${LOCATIONIQ_API_KEY}&q=${encodedPlaceName}&format=json&limit=15`;
 
   console.log(`Geocoding for: "${placeName}" using LocationIQ API...`);
 
@@ -22,14 +22,13 @@ const getCoordinatesForPlace = async (placeName) => {
 
     // We check if any results were found.
     if (data && data.length > 0) {
-      const firstResult = data[0];
-      const location = {
-        name: firstResult.display_name, // keeping similar to Open-Meteo's "name"
-        country: firstResult.address?.country || null,
-        admin1: firstResult.address?.state || null, // This is usually the state
-        lat: parseFloat(firstResult.lat),
-        lon: parseFloat(firstResult.lon)
-      };
+      const location = data.map((result) => ({
+        name: result.display_name,
+        country: result.address?.country || null,
+        admin1: result.address?.state || null, // Usually the state
+        lat: parseFloat(result.lat),
+        lon: parseFloat(result.lon),
+      }));
       console.log(`Geocoding successful: ${location.name}, ${location.admin1} -> [${location.lat}, ${location.lon}]`);
       return location;
     } else {
