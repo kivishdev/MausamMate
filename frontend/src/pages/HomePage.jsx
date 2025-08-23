@@ -1,4 +1,4 @@
-// File: frontend/src/pages/HomePage.jsx (COMPLETE AND CORRECTED)
+// File: frontend/src/pages/HomePage.jsx (IMPROVED VERSION)
 // ========================================================================
 import { useEffect, useState } from 'react';
 import React from 'react';
@@ -59,11 +59,18 @@ function HomePage() {
     };
   }, [isLoading]);
 
-  // --- THE FIX: Added the complete logic for isLoading ---
+  // Enhanced loading screen with LoaderCircle
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen text-gray-700">
-        <div className="relative w-24 h-24 mb-4">
+      <div className="flex flex-col items-center justify-center h-screen text-gray-700 bg-gradient-to-br from-blue-50 to-indigo-100">
+        {/* App Logo */}
+        <div className="flex items-center gap-3 mb-8">
+          <img src="/pwa-192x192.png" alt="MausamMate Logo" className="h-16 w-16" />
+          <h1 className="text-4xl font-bold text-gray-800">MausamMate</h1>
+        </div>
+
+        {/* Animated weather icons */}
+        <div className="relative w-24 h-24 mb-6">
           {loadingIcons.map((icon, index) => (
             <div
               key={index}
@@ -75,9 +82,31 @@ function HomePage() {
             </div>
           ))}
         </div>
-        <p className="text-sm text-gray-500 mb-2">Please keep your location turned on for accurate weather data</p>
-        <p className="text-xl font-bold animate-pulse text-gray-800">{loadingMessages[currentMessageIndex]}</p>
-        <p className="text-sm text-gray-500 mt-2">Please wait a moment...</p>
+
+        {/* Loading spinner */}
+        <div className="mb-4">
+          <LoaderCircle size={32} className="animate-spin text-blue-500" />
+        </div>
+
+        {/* Instructions */}
+        <div className="text-center max-w-md px-4 mb-4">
+          <p className="text-lg font-medium text-blue-600 mb-2">
+            📍 Please keep your device location turned on
+          </p>
+          <p className="text-sm text-gray-600">
+            We need your location to fetch accurate weather data for your area
+          </p>
+        </div>
+
+        {/* Dynamic loading message */}
+        <p className="text-xl font-bold animate-pulse text-gray-800 text-center px-4">
+          {loadingMessages[currentMessageIndex]}
+        </p>
+        
+        {/* Wait message */}
+        <p className="text-sm text-gray-500 mt-4 animate-pulse">
+          Please wait a moment...
+        </p>
       </div>
     );
   }
@@ -113,12 +142,15 @@ function HomePage() {
           <SearchBar />
         </div>
         
-        <LocationPermissionPrompt />
+        <div className="flex flex-col items-center">
+          <LoaderCircle size={40} className="animate-spin text-blue-500 mb-4" />
+          <p className="text-lg font-medium text-blue-600">Waiting for location permission...</p>
+        </div>
       </div>
     );
   }
   
-  // --- THE FIX: Added the complete logic for error ---
+  // Error state
   if (error && !location && locationPermissionState !== 'pending') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4">
@@ -127,8 +159,9 @@ function HomePage() {
           <p className="text-gray-600 mt-2">{error}</p>
           <button 
             onClick={fetchInitialData} 
-            className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
+            className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors flex items-center gap-2 mx-auto"
           >
+            <LoaderCircle size={16} className="animate-spin" />
             Try Again
           </button>
         </div>
