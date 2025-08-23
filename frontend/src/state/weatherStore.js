@@ -1,5 +1,5 @@
 // File: frontend/src/state/weatherStore.js
-// Purpose: Fixed version with session reset on location change
+// Purpose: Fixed version with MANDATORY browser location permission
 
 import { create } from 'zustand';
 import axios from 'axios';
@@ -16,6 +16,7 @@ export const useWeatherStore = create((set, get) => ({
   isLoading: true,
   isChatLoading: false,
   error: null,
+  locationPermissionState: null, // 'pending', 'granted', 'denied', 'unavailable'
 
   // --- ACTIONS ---
   fetchWeatherForCoordinates: async (lat, lon) => {
@@ -155,118 +156,128 @@ export const useWeatherStore = create((set, get) => ({
   },
 
   /**
-   * Fetches initial data when the app loads - with better geolocation handling
+   * Force request for browser location permission
    */
-  fetchInitialData: () => {
-    set({ isLoading: true, error: null });
+  requestLocationPermission: async () => {
+    console.log('🔍 Requesting browser location permission...');
+    set({ locationPermissionState: 'pending', isLoading: true, error: null });
 
-    const fetchByIp = async () => {
-      console.log("GPS failed or was blocked. Falling back to IP-based location.");
-      try {
-        const locationRes = await axios.get(`${API_BASE_URL}/api/location`);
-        const locationData = locationRes.data;
-        
-        const location = { 
-          name: locationData.city || locationData.region || 'Your Location', 
-          lat: locationData.lat, 
-          lon: locationData.lon 
-        };
-        
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        console.log('❌ Browser does not support geolocation');
         set({ 
-          location,
-          sessionId: null, // Reset session for initial location
-          aiResponse: "Hello! Ask me anything about the weather..."
-        });
-        await get().fetchWeatherForCoordinates(locationData.lat, locationData.lon);
-        
-      } catch (err) {
-        console.error("IP-based location also failed:", err);
-        set({ 
-          error: 'Could not detect your location. Please use the search bar to find your city.', 
+          locationPermissionState: 'unavailable',
+          error: 'Your browser does not support location services. Please use the search bar to find your city.',
           isLoading: false 
         });
+        resolve(false);
+        return;
       }
-    };
 
-    // Check if geolocation is available and HTTPS
-    if (!navigator.geolocation) {
-      console.log("Browser does not support geolocation.");
-      fetchByIp();
-      return;
-    }
-
-    // Check if we're on HTTPS (required for geolocation in modern browsers)
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-      console.warn('Geolocation requires HTTPS. Falling back to IP location.');
-      fetchByIp();
-      return;
-    }
-
-    // Request geolocation with timeout and better error handling
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        console.log(`GPS location found: [${latitude}, ${longitude}]`);
-        
-        try {
-          // Get city name from coordinates
-          const geoResponse = await axios.get(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-          );
+      // Always request fresh permission by calling getCurrentPosition
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          console.log('✅ Location permission granted');
+          const { latitude, longitude } = position.coords;
           
-          const cityName = geoResponse.data.city || 
-                          geoResponse.data.locality || 
-                          geoResponse.data.principalSubdivision || 
-                          'Current Location';
-                          
-          const location = { name: cityName, lat: latitude, lon: longitude };
+          set({ locationPermissionState: 'granted' });
+          
+          try {
+            // Get city name from coordinates
+            console.log(`🌍 Getting city name for coordinates: [${latitude}, ${longitude}]`);
+            const geoResponse = await axios.get(
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+            );
+            
+            const cityName = geoResponse.data.city || 
+                            geoResponse.data.locality || 
+                            geoResponse.data.principalSubdivision || 
+                            'Current Location';
+                            
+            const location = { name: cityName, lat: latitude, lon: longitude };
+            
+            set({ 
+              location,
+              sessionId: null, // Reset session for GPS location
+              aiResponse: "Hello! Ask me anything about the weather..."
+            });
+            
+            console.log(`🏙️ Location detected: ${cityName} [${latitude}, ${longitude}]`);
+            await get().fetchWeatherForCoordinates(latitude, longitude);
+            
+            resolve(true);
+            
+          } catch (reverseGeoError) {
+            console.error('🚨 Reverse geocoding failed:', reverseGeoError);
+            // Still use the coordinates even if city name lookup fails
+            const location = { name: 'Current Location', lat: latitude, lon: longitude };
+            set({ 
+              location,
+              sessionId: null,
+              aiResponse: "Hello! Ask me anything about the weather..."
+            });
+            await get().fetchWeatherForCoordinates(latitude, longitude);
+            resolve(true);
+          }
+        },
+        (error) => {
+          console.error('❌ Geolocation permission denied or failed:', error);
+          
+          let errorMessage = '';
+          let permissionState = 'denied';
+          
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = '🚫 Location access was denied. Please enable location permissions in your browser settings and refresh the page, or use the search bar to find your city.';
+              permissionState = 'denied';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = '📍 Your location is currently unavailable. Please check your GPS settings or use the search bar to find your city.';
+              permissionState = 'unavailable';
+              break;
+            case error.TIMEOUT:
+              errorMessage = '⏰ Location request timed out. Please try again or use the search bar to find your city.';
+              permissionState = 'denied';
+              break;
+            default:
+              errorMessage = '🌍 Unable to access your location. Please use the search bar to find your city.';
+              permissionState = 'denied';
+              break;
+          }
+          
           set({ 
-            location,
-            sessionId: null, // Reset session for GPS location
-            aiResponse: "Hello! Ask me anything about the weather..."
+            locationPermissionState: permissionState,
+            error: errorMessage,
+            isLoading: false 
           });
           
-          await get().fetchWeatherForCoordinates(latitude, longitude);
-          
-        } catch (reverseGeoError) {
-          console.error('Reverse geocoding failed:', reverseGeoError);
-          // Still use the coordinates even if city name lookup fails
-          const location = { name: 'Current Location', lat: latitude, lon: longitude };
-          set({ 
-            location,
-            sessionId: null,
-            aiResponse: "Hello! Ask me anything about the weather..."
-          });
-          await get().fetchWeatherForCoordinates(latitude, longitude);
+          resolve(false);
+        },
+        {
+          timeout: 15000, // 15 second timeout
+          enableHighAccuracy: true, // Request high accuracy to ensure permission prompt
+          maximumAge: 0 // Don't use cached location, force fresh permission request
         }
-      },
-      (error) => {
-        console.error("Geolocation error:", error);
-        
-        let errorMessage = 'Location access ';
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage += 'was denied. Using IP location instead.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage += 'is unavailable. Using IP location instead.';
-            break;
-          case error.TIMEOUT:
-            errorMessage += 'timed out. Using IP location instead.';
-            break;
-          default:
-            errorMessage += 'failed. Using IP location instead.';
-            break;
-        }
-        
-        console.log(errorMessage);
-        fetchByIp();
-      },
-      {
-        timeout: 10000, // 10 second timeout
-        enableHighAccuracy: false, // Faster response
-        maximumAge: 300000 // Cache for 5 minutes
-      }
-    );
+      );
+    });
+  },
+
+  /**
+   * Fetches initial data when the app loads - ALWAYS requests location permission first
+   */
+  fetchInitialData: async () => {
+    console.log('🚀 App starting - requesting location permission...');
+    
+    // Always try to get browser location permission first
+    const locationGranted = await get().requestLocationPermission();
+    
+    if (!locationGranted) {
+      console.log('📍 Browser location not available, but app is ready for manual search');
+      // Don't fallback to IP location automatically - let user search manually
+      set({
+        isLoading: false,
+        error: null // Clear error so user can search
+      });
+    }
   },
 }));

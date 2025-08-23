@@ -11,6 +11,7 @@ import Tabs from '../components/Tabs';
 import HourlyForecast from '../components/HourlyForecast';
 import DailyForecast from '../components/DailyForecast';
 import AskMausamButton from '../components/AskMausamButton';
+import LocationPermissionPrompt from '../components/LocationPermissionPrompt';
 import { LoaderCircle, X, Sun, Cloud, CloudRain, Wind } from 'lucide-react';
 
 // --- Loading screen logic ---
@@ -31,7 +32,7 @@ const loadingIcons = [
 // -----------------------------
 
 function HomePage() {
-  const { isLoading, error, fetchInitialData } = useWeatherStore();
+  const { isLoading, error, fetchInitialData, location, locationPermissionState } = useWeatherStore();
   const [activeTab, setActiveTab] = useState('Today');
   const [showChatbot, setShowChatbot] = useState(false);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
@@ -81,8 +82,13 @@ function HomePage() {
     );
   }
   
+  // Show location permission prompt if needed
+  if (!location && (locationPermissionState !== 'granted')) {
+    return <LocationPermissionPrompt />;
+  }
+  
   // --- THE FIX: Added the complete logic for error ---
-  if (error) {
+  if (error && !location) {
     return (
       <div className="max-w-md mx-auto text-center bg-white p-8 rounded-2xl shadow-lg">
         <h2 className="text-xl font-semibold text-red-500">Oops! Something went wrong.</h2>
