@@ -82,23 +82,56 @@ function HomePage() {
     );
   }
   
-  // Show location permission prompt if needed
-  if (!location && (locationPermissionState !== 'granted')) {
-    return <LocationPermissionPrompt />;
+  // Show location permission prompt when no location and permission not granted
+  if (!location && !isLoading && (locationPermissionState === null || locationPermissionState === 'denied' || locationPermissionState === 'unavailable')) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4">
+        {/* Header with search bar */}
+        <div className="w-full max-w-md mb-8">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <img src="/pwa-192x192.png" alt="MausamMate Logo" className="h-12 w-12" />
+            <h1 className="text-3xl font-bold text-gray-800">MausamMate</h1>
+          </div>
+          <SearchBar />
+        </div>
+        
+        <LocationPermissionPrompt />
+      </div>
+    );
+  }
+
+  // Show permission pending state
+  if (!location && locationPermissionState === 'pending') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4">
+        {/* Header with search bar */}
+        <div className="w-full max-w-md mb-8">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <img src="/pwa-192x192.png" alt="MausamMate Logo" className="h-12 w-12" />
+            <h1 className="text-3xl font-bold text-gray-800">MausamMate</h1>
+          </div>
+          <SearchBar />
+        </div>
+        
+        <LocationPermissionPrompt />
+      </div>
+    );
   }
   
   // --- THE FIX: Added the complete logic for error ---
-  if (error && !location) {
+  if (error && !location && locationPermissionState !== 'pending') {
     return (
-      <div className="max-w-md mx-auto text-center bg-white p-8 rounded-2xl shadow-lg">
-        <h2 className="text-xl font-semibold text-red-500">Oops! Something went wrong.</h2>
-        <p className="text-gray-600 mt-2">{error}</p>
-        <button 
-          onClick={fetchInitialData} 
-          className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
-        >
-          Try Again
-        </button>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4">
+        <div className="max-w-md mx-auto text-center bg-white p-8 rounded-2xl shadow-lg">
+          <h2 className="text-xl font-semibold text-red-500">Oops! Something went wrong.</h2>
+          <p className="text-gray-600 mt-2">{error}</p>
+          <button 
+            onClick={fetchInitialData} 
+            className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
