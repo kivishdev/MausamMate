@@ -1,5 +1,5 @@
 // ========================================================================
-// File: backend/server.js (THE FINAL, CORRECTED VERSION WITH CORS FIX)
+// File: backend/server.js (THE FINAL, CORRECTED VERSION WITH CORS FIX + SECURITY HEADERS)
 // ========================================================================
 require("dotenv").config();
 
@@ -17,16 +17,26 @@ const geocodeRoutes = require("./src/api/geocode");
 const app = express();
 
 // --- THE FIX: Specific CORS Configuration ---
-// This tells the server to explicitly allow requests from our frontend's address.
 const corsOptions = {
-  origin: ['https://mausam-mate-2734.vercel.app',
-  'http://localhost:5173'],
+  origin: [
+    'https://mausam-mate-2734.vercel.app',
+    'http://localhost:5173'
+  ],
   optionsSuccessStatus: 200 // For legacy browser support
 };
 app.use(cors(corsOptions));
 // ---------------------------------------------
 
 app.use(express.json());
+
+// --- 🔐 Add Security Headers Middleware ---
+app.use((req, res, next) => {
+  res.setHeader("X-Frame-Options", "SAMEORIGIN"); // Prevent clickjacking
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin"); // Control referer info
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()"); // Restrict features
+  next();
+});
+// ---------------------------------------------
 
 // --- Root Route Handler ---
 app.get("/", (_req, res) => {
