@@ -16,13 +16,15 @@ const geocodeRoutes = require("./src/api/geocode");
 // --- Express App Setup ---
 const app = express();
 
-// --- THE FIX: Specific CORS Configuration ---
+
+
+
 const corsOptions = {
   origin: [
     'https://mausam-mate-2734.vercel.app',
     'http://localhost:5173'
   ],
-  optionsSuccessStatus: 200 // For legacy browser support
+  optionsSuccessStatus: 200 
 };
 app.use(cors(corsOptions));
 // ---------------------------------------------
