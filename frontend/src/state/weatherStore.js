@@ -186,7 +186,7 @@ export const useWeatherStore = create((set, get) => ({
             // Get city name from coordinates
             console.log(`🌍 Getting city name for coordinates: [${latitude}, ${longitude}]`);
             const geoResponse = await axios.get(
-              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+              `https://api-bdc.net/data/reverse-geocode?latitude=${latitude}&longitude=${longitude}&localityLanguage=en&key=${import.meta.env.VITE_BDC_API_KEY}`
             );
             
             const cityName = geoResponse.data.city || 
