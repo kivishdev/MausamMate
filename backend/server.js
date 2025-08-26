@@ -16,9 +16,6 @@ const geocodeRoutes = require("./src/api/geocode");
 // --- Express App Setup ---
 const app = express();
 
-
-
-
 const corsOptions = {
   origin: [
     'https://mausam-mate-2734.vercel.app',
@@ -30,14 +27,6 @@ app.use(cors(corsOptions));
 // ---------------------------------------------
 
 app.use(express.json());
-
-// --- 🔐 Add Security Headers Middleware ---
-app.use((req, res, next) => {
-  res.setHeader("X-Frame-Options", "SAMEORIGIN"); // Prevent clickjacking
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin"); // Control referer info
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()"); // Restrict features
-  next();
-});
 // ---------------------------------------------
 
 // --- Root Route Handler ---
