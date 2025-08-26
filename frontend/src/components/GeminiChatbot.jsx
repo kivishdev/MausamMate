@@ -1,6 +1,6 @@
-// File: src/components/GeminiChatbot.jsx (ENHANCED WITH LOCATION FEATURES)
+// File: src/components/GeminiChatbot.jsx (FULLY CORRECTED)
 import { useState, useEffect, useRef } from "react";
-import { Send, LoaderCircle, MapPin, RefreshCw } from "lucide-react";
+import { Send, LoaderCircle, MapPin } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useWeatherStore } from "../state/weatherStore";
 
@@ -13,6 +13,7 @@ function GeminiChatbot() {
     locationPermissionState,
     requestLocationPermission 
   } = useWeatherStore();
+
   const [inputValue, setInputValue] = useState("");
   const [currentLocationKey, setCurrentLocationKey] = useState(null);
   const chatEndRef = useRef(null);
@@ -30,28 +31,22 @@ function GeminiChatbot() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [aiResponse, isChatLoading]);
 
-  // Reset chat when location changes
+  // Trigger weather report only when location changes
   useEffect(() => {
-    if (location) {
-      const newLocationKey = `${location.lat}-${location.lon}`;
-      
-      // If location changed, trigger a fresh weather report
-      if (currentLocationKey && currentLocationKey !== newLocationKey) {
-        console.log('Location changed, requesting fresh weather report for:', location.name);
-        
-        // Ask for a fresh weather report for the new location
-        askAi(`Give me a detailed weather report for ${location.name}. Include current conditions, hourly forecast, and any weather alerts.`);
-      }
-      
-      setCurrentLocationKey(newLocationKey);
-    }
+    if (!location) return;
+    const newLocationKey = `${location.lat}-${location.lon}`;
+    if (currentLocationKey === newLocationKey) return; // Prevent double requests
+    setCurrentLocationKey(newLocationKey);
+
+    console.log('Location changed, requesting fresh weather report for:', location.name);
+
+    askAi(`Give me a detailed weather report for ${location.name}. Include current conditions, hourly forecast, and any weather alerts.`);
   }, [location, currentLocationKey, askAi]);
 
   const handleSend = () => {
-    if (inputValue.trim()) {
-      askAi(inputValue);
-      setInputValue("");
-    }
+    if (!inputValue.trim()) return;
+    askAi(inputValue);
+    setInputValue("");
   };
 
   const handleKeyPress = (event) => {
@@ -61,56 +56,32 @@ function GeminiChatbot() {
     }
   };
 
-  // Get welcome message based on current location
+  // Welcome message based on location
   const getWelcomeMessage = () => {
-    if (location) {
-      return `Hello! I'm your weather assistant for ${location.name}. Ask me anything about the weather! 🌤️`;
-    }
+    if (location) return `Hello! I'm your weather assistant for ${location.name}. Ask me anything about the weather! 🌤️`;
     return "Hello! Ask me anything about the weather! 🌤️";
   };
 
-  // Get location status for chatbot
+  // Location status messages
   const getLocationStatusMessage = () => {
-    if (!location) {
-      switch (locationPermissionState) {
-        case 'pending':
-          return {
-            message: "🔍 Getting your location for accurate weather data...",
-            color: "text-blue-600 bg-blue-50 border-blue-200"
-          };
-        case 'denied':
-          return {
-            message: "📍 Location access denied. Search for a city to get weather data.",
-            color: "text-orange-600 bg-orange-50 border-orange-200",
-            action: true
-          };
-        case 'unavailable':
-          return {
-            message: "🌍 Location unavailable. Please search for your city manually.",
-            color: "text-gray-600 bg-gray-50 border-gray-200"
-          };
-        default:
-          return {
-            message: "📍 Enable location access for personalized weather updates.",
-            color: "text-blue-600 bg-blue-50 border-blue-200",
-            action: true
-          };
-      }
+    if (location) return null;
+    switch (locationPermissionState) {
+      case 'pending':
+        return { message: "🔍 Getting your location for accurate weather data...", color: "text-blue-600 bg-blue-50 border-blue-200" };
+      case 'denied':
+        return { message: "📍 Location access denied. Search for a city to get weather data.", color: "text-orange-600 bg-orange-50 border-orange-200", action: true };
+      case 'unavailable':
+        return { message: "🌍 Location unavailable. Please search for your city manually.", color: "text-gray-600 bg-gray-50 border-gray-200" };
+      default:
+        return { message: "📍 Enable location access for personalized weather updates.", color: "text-blue-600 bg-blue-50 border-blue-200", action: true };
     }
-    return null;
   };
 
   const locationStatus = getLocationStatusMessage();
 
-  // Suggested prompts based on location
+  // Suggested prompts
   const getSuggestedPrompts = () => {
-    const basePrompts = [
-      "Will it rain today?",
-      "What's the temperature tomorrow?",
-      "Should I carry an umbrella?",
-      "How's the air quality?"
-    ];
-
+    const basePrompts = ["Will it rain today?", "What's the temperature tomorrow?", "Should I carry an umbrella?", "How's the air quality?"];
     if (location) {
       return [
         `Weather forecast for ${location.name}`,
@@ -119,7 +90,6 @@ function GeminiChatbot() {
         "Any weather warnings for today?"
       ];
     }
-
     return basePrompts;
   };
 
@@ -127,7 +97,7 @@ function GeminiChatbot() {
 
   return (
     <div className="flex flex-col h-full w-full">
-      {/* Chat Messages - No bubbles, natural width */}
+      {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Location Header */}
         {location ? (
@@ -141,16 +111,13 @@ function GeminiChatbot() {
           </div>
         ) : locationStatus && (
           <div className={`text-center py-2 px-3 rounded-lg border ${locationStatus.color}`}>
-            <p className="text-xs font-medium">
-              {locationStatus.message}
-            </p>
+            <p className="text-xs font-medium">{locationStatus.message}</p>
             {locationStatus.action && (
               <button
                 onClick={requestLocationPermission}
                 className="mt-2 text-xs text-blue-600 hover:text-blue-700 underline flex items-center justify-center gap-1 mx-auto"
               >
-                <MapPin size={12} />
-                Enable Location
+                <MapPin size={12} /> Enable Location
               </button>
             )}
           </div>
@@ -164,7 +131,7 @@ function GeminiChatbot() {
           </div>
         ) : aiResponse && aiResponse !== "Hello! Ask me anything about the weather..." ? (
           <div className="text-gray-700 text-sm leading-relaxed">
-            <ReactMarkdown 
+            <ReactMarkdown
               components={{
                 p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                 ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
@@ -182,12 +149,7 @@ function GeminiChatbot() {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Welcome message */}
-            <div className="text-gray-500 text-sm text-center py-4">
-              {getWelcomeMessage()}
-            </div>
-
-            {/* Suggested prompts */}
+            <div className="text-gray-500 text-sm text-center py-4">{getWelcomeMessage()}</div>
             {location && (
               <div className="space-y-2">
                 <p className="text-xs text-gray-500 font-medium">Try asking:</p>
@@ -197,7 +159,6 @@ function GeminiChatbot() {
                       key={index}
                       onClick={() => {
                         setInputValue(prompt);
-                        // Auto-send the prompt
                         setTimeout(() => {
                           askAi(prompt);
                           setInputValue("");
@@ -223,16 +184,10 @@ function GeminiChatbot() {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyPress}
-          placeholder={
-            location 
-              ? `Ask about weather in ${location.name}...` 
-              : "e.g., Kal baarish hogi kya?"
-          }
+          placeholder={location ? `Ask about weather in ${location.name}...` : "e.g., Kal baarish hogi kya?"}
           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           disabled={isChatLoading}
         />
-        
-        {/* Location button when no location */}
         {!location && locationPermissionState !== 'pending' && (
           <button
             onClick={requestLocationPermission}
@@ -242,8 +197,6 @@ function GeminiChatbot() {
             <MapPin size={18} />
           </button>
         )}
-
-        {/* Send button */}
         <button
           onClick={handleSend}
           className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[44px]"
