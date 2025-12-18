@@ -1,3 +1,67 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+.custom-node {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    min-width: 200px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: all 0.2s ease-in-out;
+}
+
+.custom-node:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    border-color: #bbb;
+}
+
+.node-header {
+    background-color: #f5f5f5;
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    font-weight: 600;
+    color: #333;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.node-content {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: #555;
+    font-size: 14px;
+}
+
+.node-content label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: #777;
+}
+
+.node-content input,
+.node-content select,
+.node-content textarea {
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.node-content input:focus,
+.node-content select:focus,
+.node-content textarea:focus {
+    outline: none;
+    border-color: #646cff;
+    box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.2);
+}
+
+/* React Flow Handle overrides if needed */
+.react-flow__handle {
+    width: 10px;
+    height: 10px;
+    background: #646cff;
+}
