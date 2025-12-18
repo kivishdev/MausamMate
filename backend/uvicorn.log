@@ -1,0 +1,7 @@
+INFO:     Will watch for changes in these directories: ['/app/backend']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [4750] using StatReload
+INFO:     Started server process [4968]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:37710 - "POST /pipelines/parse HTTP/1.1" 200 OK
